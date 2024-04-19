@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IEMA PLENO DE COROATÁ</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    #output {
+        margin-top: 20px;
+        max-height: calc(100vh - 250px);
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+    }
+    #footer {
+        position: fixed;
+        bottom: 0;
+        right: 0; /* Ajustado para o lado direito */
+        width: 100%;
+        background-color: #f3f3f3;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between; /* Alterado para espaço entre os itens */
+        align-items: center;
+    }
+    button {
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin: 0 5px;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    #barcodeInputContainer {
+        text-align: center;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    h1 {
+        text-align: center;
+        margin-top: 20px;
+    }
+    .repeat {
+        color: red;
+        font-weight: bold;
+    }
+    .error {
+        color: red;
+        font-weight: bold;
+    }
+    #ultimoNome {
+        text-align: center;
+        font-weight: bold;
+        color: red;
+        font-size: 20px;
+        margin-top: 10px;
+    }
+    #list {
+        margin-bottom: 100px; /* Margem adicional na parte inferior */
+    }
+    #exportButton, #saveButton {
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin: 0 5px;
+    }
+    #exportButton:hover, #saveButton:hover {
+        background-color: #45a049;
+    }
+    #exportButton {
+        order: 2; /* Ajustado para ser o segundo item */
+    }
+    #saveButton {
+        order: 1; /* Ajustado para ser o primeiro item */
+    }
+    /* Estilos para telas menores que 600px (dispositivos móveis) */
+    @media only screen and (max-width: 600px) {
+        h1 {
+            font-size: 24px;
+        }
+        #ultimoNome {
+            font-size: 18px;
+        }
+    }
+</style>
+</head>
+<body>
+<h1>IEMA PLENO DE COROATÁ</h1>
+<ul id="list"></ul>
+<div id="footer">
+    <div>
+        <span id="count"></span>
+    </div>
+    <div id="barcodeInputContainer">
+        <input type="text" id="barcodeInput" placeholder="Insira o código de barras" autofocus>
+        <div id="ultimoNome"></div> <!-- Movido abaixo da caixa de entrada de códigos de barras -->
+    </div>
+    <button id="exportButton" onclick="exportToExcel()">Exportar para Excel</button>
+    <button id="saveButton" onclick="salvarArquivo()">Salvar</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.0/xlsx.full.min.js"></script>
+<script>
+    // Lista de códigos de barras, nomes e turmas correspondentes
+    const listaDeCodigos = {
+"4341": { nome: "SIMONE DA SILVA CASTRO", turma: "PROFESSORA" },
+"3324": { nome: "EMANUEL LEANDRO BAIMA DA SILVA", turma: "PROFESSOR" },
+"82347": { nome: "ANA GABRIELY LEMOS DA CONCEIÇÃO ", turma: "101" },
+"82727": { nome: "ANA JOSIELLEEN FERREIRA DOS SANTOS DE MORAIS ", turma: "101" },
+"80325": { nome: "ANTHONY GABRIEL SALAZAR PINTO ", turma: "101" },
+"82734": { nome: "ANTONIO EMANOEL DUARTE CUNHA ", turma: "101" },
+"80326": { nome: "ANTONIO HELENO PEREIRA DE FREITAS JÚNIOR ", turma: "101" },
+"83750": { nome: "ANTONIO MARCOS BARBOSA MENEZES ", turma: "101" },
+"80327": { nome: "CLEYSON CARLOS SOUSA SILVA ", turma: "101" },
+"78768": { nome: "DÉBORA LAUANA ARAÚJO DAMASCENO ", turma: "101" },
+"80328": { nome: "EFRAIM RODRIGUES DA COSTA ", turma: "101" },
+"82730": { nome: "ELIOMAR DA SILVA SOUSA ", turma: "101" },
+"80329": { nome: "EMILLY VITÓRIA SILVA CARVALHO ", turma: "101" },
+"83485": { nome: "ERIC RYAN SOUZA BARROSO ", turma: "101" },
+"80330": { nome: "ESTEFANY DA SILVA MARTINS ", turma: "101" },
+"78769": { nome: "FELIPE EDUARDO DA SILVA ALVES ", turma: "101" },
+"78770": { nome: "GUSTAVO FARIAS ALVES ", turma: "101" },
+"78771": { nome: "HIAGO GABRIEL CASTRO NASCIMENTO ", turma: "101" },
+"80405": { nome: "ISABELA BRANDÃO DA COSTA ", turma: "101" },
+"80332": { nome: "JHUAN GABRIEL ROCHA SOUSA ", turma: "101" },
+"78772": { nome: "JOSE HENRIQUE PIRES SAJES ", turma: "101" },
+"80333": { nome: "JULIANA BEATRIZ DA SILVA LIMA ", turma: "101" },
+"80334": { nome: "KAYLANE OLIVEIRA BARROS ", turma: "101" },
+"78773": { nome: "LÉO VITOR SOUSA GONÇALVES ", turma: "101" },
+"80335": { nome: "LÍVIA MARIA DE MELO GOMES DA SILVA ", turma: "101" },
+"80412": { nome: "LORAYNE MIKAELLE MARTINS DA SILVA ", turma: "101" },
+"80336": { nome: "LUDMILA MARIA SOUSA LOIOLA ", turma: "101" },
+"80337": { nome: "LUZIANE RODRIGUES DE JESUS ", turma: "101" },
+"82737": { nome: "MARCELA MILENA PONTES BERNARDO DA SILVA ", turma: "101" },
+"82726": { nome: "MARCOS PAULO RODRIGUES DA SILVA ", turma: "101" },
+"82728": { nome: "MARIA AMABILLY BRANDAO DA SILVA ", turma: "101" },
+"80338": { nome: "MARIA GABRIELLY DE BRITO GOMES ", turma: "101" },
+"82731": { nome: "MIRELI OLIVEIRA DA SILVA ", turma: "101" },
+"80339": { nome: "NAYARA DO NASCIMENTO LIMA ", turma: "101" },
+"80340": { nome: "NAYLLA MARIA QUINTO FERNANDES ", turma: "101" },
+"78774": { nome: "PAULA DOS SANTOS ANDRADE ", turma: "101" },
+"78775": { nome: "PAULO HENRIQUE DA CONCEIÇÃO DE ARAÚJO ", turma: "101" },
+"78776": { nome: "PAULO MICAEL DO CARMO SOUSA ", turma: "101" },
+"82725": { nome: "SILAS KALLYL FONTES RAPOSO DA SILVA ", turma: "101" },
+"78777": { nome: "TAINARA LIMA DE SOUZA ", turma: "101" },
+"80341": { nome: "THAYVANNA YASMIN FARIAS PEREIRA ", turma: "101" },
+"78779": { nome: "VINÍCIUS DA CONCEIÇÃO SOARES ", turma: "101" },
+"80342": { nome: "WEDEN LUCAS JANSEN LIMA DA COSTA ", turma: "101" },
+"80343": { nome: "ALEJANDRO ALVES DE PAULA - TURMA 102", turma: "102" },
+"83582": { nome: "ANA BEATRIZ DE SOUSA MORAES - TURMA 102", turma: "102" },
+"87919": { nome: "ANA BEATRIZ DOS SANTOS CARDOSO - TURMA 102", turma: "102" },
+"80345": { nome: "ANA KAROLINE DOS SANTOS FRAZAO - TURMA 102", turma: "102" },
+"80346": { nome: "ANA KETHELLY SANTOS DE SOUSA - TURMA 102", turma: "102" },
+"80347": { nome: "ANDRESSA VIEIRA DOS SANTOS PEREIRA - TURMA 102", turma: "102" },
+"80348": { nome: "ANNA VITÓRIA SENA DE SOUSA - TURMA 102", turma: "102" },
+"83370": { nome: "ANNY KAROLINE AGUIAR MATOS - TURMA 102", turma: "102" },
+"83751": { nome: "BRUNO COSTA DE ANDRADE - TURMA 102", turma: "102" },
+"80349": { nome: "CARLOS GABRIEL DOS REIS SANTOS - TURMA 102", turma: "102" },
+"82733": { nome: "CAUÃ LOPES DE SOUSA - TURMA 102", turma: "102" },
+"82735": { nome: "DIEGO FERNANDO NASCIMENTO PEREIRA - TURMA 102", turma: "102" },
+"80351": { nome: "EDUARDA MANUELLE LIMA LEITÃO NASCIMENTO - TURMA 102", turma: "102" },
+"80352": { nome: "EDUARDO SOUSA DA SILVA - TURMA 102", turma: "102" },
+"80353": { nome: "FLAVIANE MIRELA DA SILVA MOURA - TURMA 102", turma: "102" },
+"83753": { nome: "FRANCISCA THATIELY DA CONCEIÇÃO DE JESUS - TURMA 102", turma: "102" },
+"80354": { nome: "FRANCISCO KAIO DE SOUSA CONCEIÇÃO - TURMA 102", turma: "102" },
+"80355": { nome: "HELOISE VITÓRIA TAVARES DA SILVA DANTAS - TURMA 102", turma: "102" },
+"80356": { nome: "JAMILY ALVES VIEIRA - TURMA 102", turma: "102" },
+"82732": { nome: "JHENNIFER JHULLY  ARAUJO MELO - TURMA 102", turma: "102" },
+"80357": { nome: "JHENNYFFER CRISTINA CASTRO PEREIRA - TURMA 102", turma: "102" },
+"80358": { nome: "JOSIELLY PEREIRA DE SOUZA VIEIRA - TURMA 102", turma: "102" },
+"80359": { nome: "JULIANA VIANA DA SILVA - TURMA 102", turma: "102" },
+"78780": { nome: "LARISSA COSTA FRAZÃO - TURMA 102", turma: "102" },
+"80360": { nome: "MARIA CLARA LOPES RODRIGUES - TURMA 102", turma: "102" },
+"80361": { nome: "MARIA EDUARDA DE OLIVEIRA GOMES - TURMA 102", turma: "102" },
+"87957": { nome: "MARIA EDUARDA DOS SANTOS DA SILVA - TURMA 102", turma: "102" },
+"80362": { nome: "MARIA SUELI DA CONCEIÇÃO - TURMA 102", turma: "102" },
+"80363": { nome: "MARIA VITORIA  DA SILVA PEREIRA - TURMA 102", turma: "102" },
+"82348": { nome: "MILENA PAIVA LIMA - TURMA 102", turma: "102" },
+"80364": { nome: "MIRELLY CRISTINA ALMEIDA PEREIRA - TURMA 102", turma: "102" },
+"83752": { nome: "NICOLLY MARIA BARROS SANTOS - TURMA 102", turma: "102" },
+"80365": { nome: "OSNAYRA BARROS RODRIGUES - TURMA 102", turma: "102" },
+"78781": { nome: "PEDRO DANIEL PONTE MOUZINHO - TURMA 102", turma: "102" },
+"80366": { nome: "SUSANE DE MATOS BRANDÃO - TURMA 102", turma: "102" },
+"78782": { nome: "TAUANY AGUIAR LIMA - TURMA 102", turma: "102" },
+"82736": { nome: "THAVILA DA SILVA ALENCAR - TURMA 102", turma: "102" },
+"80367": { nome: "THAYS SILVA DOS SANTOS - TURMA 102", turma: "102" },
+"78784": { nome: "VITOR GABRIEL DA CONCEIÇÃO OLIVEIRA - TURMA 102", turma: "102" },
+"80368": { nome: "WAGSON COSTA REIS - TURMA 102", turma: "102" },
+"78785": { nome: "WESLLEN GABRIEL COSTA SILVA - TURMA 102", turma: "102" },
+"80369": { nome: "YASMIM VICTORIA ALVES BARRETO - TURMA 102", turma: "102" },
+"78799": { nome: "ANA GRAZIELLY MARTINS DA SILVA ", turma: "103" },
+"83759": { nome: "ANTONIA THALINY DA CONCEIÇÃO DE JESUS ", turma: "103" },
+"80397": { nome: "BEATRIZ FRAZAO VASCONCELOS AGUIAR ", turma: "103" },
+"78800": { nome: "BRENDA MENDES DE CARVALHO ", turma: "103" },
+"80398": { nome: "CARLOS RUAN DE ARAÚJO SILVA ", turma: "103" },
+"80399": { nome: "CAUÊ DE ARAÚJO DA COSTA ", turma: "103" },
+"80400": { nome: "ELINALDO DA CONCEIÇÃO DE OLIVEIRA ", turma: "103" },
+"78801": { nome: "EMERSON SILVA DE JESUS ", turma: "103" },
+"80401": { nome: "EMILLY GABRIELE DOS SANTOS DE LIMA ", turma: "103" },
+"80402": { nome: "EVELLYN SARYANE OLIVEIRA DA SILVA ", turma: "103" },
+"80404": { nome: "FRANCISCA CARLA DA CONCEIÇÃO DAMASCENO ", turma: "103" },
+"80406": { nome: "ISABELLA KESIA VIEIRA CASTRO ", turma: "103" },
+"83760": { nome: "JARDILENE DO NASCIMENTO MARQUES ", turma: "103" },
+"80407": { nome: "JHENIFFER CARINNY ARAÚJO NASCIMENTO ", turma: "103" },
+"82739": { nome: "JOAO PEDRO DA SILVA AZEVEDO ", turma: "103" },
+"80408": { nome: "JOCÍLIA BARBOSA TRINDADE ", turma: "103" },
+"80410": { nome: "KAUAN HENRIQUE DO NASCIMENTO  DE FARIAS ", turma: "103" },
+"83394": { nome: "KELVIN RUAN SOUSA SILVA ", turma: "103" },
+"80411": { nome: "LÍVIA DA SILVA COSTA ", turma: "103" },
+"78802": { nome: "LUCIANO RIBEIRO PEREIRA ", turma: "103" },
+"78803": { nome: "MARIA EDUARDA ALMEIDA RAMOS ", turma: "103" },
+"78804": { nome: "MARIA EDUARDA DOS SANTOS SOUZA ", turma: "103" },
+"78805": { nome: "MARIA ESTELA SILVA COSTA ", turma: "103" },
+"80413": { nome: "MARIO FELIPE ROCHA DE ARAÚJO ", turma: "103" },
+"80414": { nome: "MELQUISEDEQUE OLIVEIRA DOS SANTOS ", turma: "103" },
+"80415": { nome: "MIKAEL LIMA DA SILVA ", turma: "103" },
+"78806": { nome: "ODAIR JOSE DOS SANTOS ", turma: "103" },
+"82740": { nome: "RAIANE DE LIMA DE MORAES ", turma: "103" },
+"80416": { nome: "RAYSLANNE DA SILVA CHAVES SANTOS ", turma: "103" },
+"80418": { nome: "SABRINA DA SILVA COUTINHO ", turma: "103" },
+"80419": { nome: "SAMYRA BRANDÃO FERREIRA ", turma: "103" },
+"78807": { nome: "SAYONARA COSTA CAJADO ", turma: "103" },
+"78808": { nome: "TAISLANE PEREIRA SILVA ", turma: "103" },
+"78809": { nome: "THAEMELLY DE ARAUJO SOUSA ", turma: "103" },
+"87911": { nome: "THAYRLA DANIELE GARCÊS DO NASCIMENTO ", turma: "103" },
+"82738": { nome: "VITOR AMORIM DANTAS ", turma: "103" },
+"87910": { nome: "WELLINGTON LUAN SILVA DA ROCHA ", turma: "103" },
+"78786": { nome: "ALANA GABRIELE VIEIRA DA SILVA - TURMA 104", turma: "104" },
+"83755": { nome: "ALANNA VITORIA SILVA DE OLIVEIRA - TURMA 104", turma: "104" },
+"87918": { nome: "AMANDA GOMES DE SOUSA - TURMA 104", turma: "104" },
+"80370": { nome: "AMANDA SOUSA DO CARMO - TURMA 104", turma: "104" },
+"78787": { nome: "AQUILES GABRIEL FARIAS DE OLIVEIRA - TURMA 104", turma: "104" },
+"80372": { nome: "AYRTON WEBLEN DOS SANTOS COSTA - TURMA 104", turma: "104" },
+"80373": { nome: "CARLOS DANIEL BARROS DO NASCIMENTO - TURMA 104", turma: "104" },
+"78789": { nome: "CARLOS EDUARDO SOARES DA SILVA LIMA - TURMA 104", turma: "104" },
+"80374": { nome: "CHALANA MATHYYELLE GUIMARÃES DA SILVA - TURMA 104", turma: "104" },
+"80376": { nome: "EMILY RAQUEL SOUSA ARAÚJO - TURMA 104", turma: "104" },
+"80377": { nome: "ENZO GABRIEL DOS SANTOS DA ROCHA - TURMA 104", turma: "104" },
+"80378": { nome: "ERIKA RAYANE RODRIGUES DA SILVA - TURMA 104", turma: "104" },
+"87909": { nome: "FRANCISCA LOANY AZEVEDO SOUSA - TURMA 104", turma: "104" },
+"80379": { nome: "GABRIEL MONTELO MARTINS - TURMA 104", turma: "104" },
+"80380": { nome: "GABRIELA MORAES RIBEIRO - TURMA 104", turma: "104" },
+"78790": { nome: "GEORGE ANDERSON DA SILVA MARTINS - TURMA 104", turma: "104" },
+"83908": { nome: "GEOVANNA KÉVYLLA PONTES SALES - TURMA 104", turma: "104" },
+"80381": { nome: "HENOLLY CRISTINE MENDES DOS SANTOS - TURMA 104", turma: "104" },
+"78792": { nome: "ISABELLA CRISTINA DE ANDRADE DA SILVA - TURMA 104", turma: "104" },
+"80382": { nome: "JHONATAS RAILSON DOS SANTOS COSTA - TURMA 104", turma: "104" },
+"80383": { nome: "JOÃO VICTOR FERREIRA CASTRO COSTA - TURMA 104", turma: "104" },
+"78794": { nome: "JOÃO VITOR CARVALHO SOUSA - TURMA 104", turma: "104" },
+"83484": { nome: "JOSÉ RUAN DOURADO REIS - TURMA 104", turma: "104" },
+"80385": { nome: "JÚLIO CÉSAR DA SILVA FERREIRA - TURMA 104", turma: "104" },
+"80386": { nome: "KELLY DOS SANTOS DE SOUSA - TURMA 104", turma: "104" },
+"80387": { nome: "KÊMILLY CRISLANNY DOS SANTOS MOREIRA - TURMA 104", turma: "104" },
+"78795": { nome: "KEVIN LUCAS NASCIMENTO DA SILVA - TURMA 104", turma: "104" },
+"80388": { nome: "LIA EMANUELY MESQUITA DE FREITAS - TURMA 104", turma: "104" },
+"78796": { nome: "LUIS CARLOS FERREIRA COSTA - TURMA 104", turma: "104" },
+"80389": { nome: "MAGNO BENÍCIO ARAUJO SANTOS - TURMA 104", turma: "104" },
+"80390": { nome: "MARCOS SILVA ABREU - TURMA 104", turma: "104" },
+"80391": { nome: "MARCOS VINICIUS DO NASCIMENTO ARAÚJO - TURMA 104", turma: "104" },
+"78797": { nome: "MIKAEL JOSÉ BARBOSA MACHADO - TURMA 104", turma: "104" },
+"87958": { nome: "NATÁLIA CAUANE AGUIAR BARROSO - TURMA 104", turma: "104" },
+"83754": { nome: "RAELYSSON MIQUEIAS FLORENTINO DE SOUSA - TURMA 104", turma: "104" },
+"78798": { nome: "RICHARLYSON DE SOUSA LIMA - TURMA 104", turma: "104" },
+"80393": { nome: "RUHAN PABLO BATISTA RIOS CORREIA - TURMA 104", turma: "104" },
+"80394": { nome: "SAMUEL ANDRADE SOUZA - TURMA 104", turma: "104" },
+"83483": { nome: "VITOR GABRIEL SILVA MUNIZ - TURMA 104", turma: "104" },
+"80395": { nome: "WELLINGTON DE SOUSA CARVALHO - TURMA 104", turma: "104" },
+"80396": { nome: "WEVERTON MARINHO DOS REIS - TURMA 104", turma: "104" },
+"83758": { nome: "YASMIN KETHELLIN ARAÚJO DE SOUSA - TURMA 104", turma: "104" },
+"72288": { nome: "ADRIANO  KAUAN LIMA DA SILVA ", turma: "201" },
+"78106": { nome: "ANA BEATRIZ DA LUZ PEREIRA ", turma: "201" },
+"73698": { nome: "ANDRESSA DA SILVA SANTOS ", turma: "201" },
+"70705": { nome: "ANTHONY GUILHERME VIANA LIMA ", turma: "201" },
+"70708": { nome: "ANTONIA LAVÍNIA VITÓRIA GUIMARÃES PEREIRA ", turma: "201" },
+"70700": { nome: "BEATRIZ DINIZ DOURADO ", turma: "201" },
+"75576": { nome: "BRUNA MENDES DE CARVALHO ", turma: "201" },
+"72935": { nome: "DAYANDERSON DE SOUSA GOMES ", turma: "201" },
+"72469": { nome: "ERICK OLIVIER GONÇALVES ", turma: "201" },
+"70699": { nome: "FRANCISCA COSTA DO NASCIMENTO ", turma: "201" },
+"74661": { nome: "GRISSYA GRAZIELLY CARDOSO MORAIS PEREIRA ", turma: "201" },
+"72434": { nome: "HIANA SAFIRA  DE ARAUJO ALVES ", turma: "201" },
+"73138": { nome: "IARA SOUSA ARAÚJO ", turma: "201" },
+"70702": { nome: "JOÃO VITOR SILVA DE OLIVEIRA ", turma: "201" },
+"78003": { nome: "JUVAN WILLIAMS MONTEIRO RODRIGUES ", turma: "201" },
+"72741": { nome: "KAIO ALENJRANDRO VIEIRA DA SILVA ", turma: "201" },
+"73742": { nome: "KATLLEN KAROLAYNE DA CONCEIÇÃO AZEVEDO ", turma: "201" },
+"78044": { nome: "LUANA SANTOS TEIXEIRA ", turma: "201" },
+"74440": { nome: "MARIA CLARA DA COSTA LIMA ", turma: "201" },
+"75425": { nome: "MARIA CLARA DE ASSUNÇÃO MOURA ", turma: "201" },
+"78046": { nome: "MATHEUS AUGUSTO ARAUJO DOS SANTOS ", turma: "201" },
+"71897": { nome: "MATHEUS RODRIGUES DE SOUZA ", turma: "201" },
+"75426": { nome: "MIKAELLY DE MOURA LEAL ", turma: "201" },
+"73953": { nome: "NAIRA UYARA RIBEIRO DE MELO ", turma: "201" },
+"74050": { nome: "NATASCHA NAYARA DA SILVA CARVALHO ", turma: "201" },
+"73130": { nome: "NEUCIEL CARNEIRO LOPES ", turma: "201" },
+"72269": { nome: "PAULO RICARDO SILVA SANTOS ", turma: "201" },
+"78201": { nome: "PEDRO EMANUEL VIEIRA MENDES ", turma: "201" },
+"75391": { nome: "PEDRO KAUE DA SILVA DE SOUSA ", turma: "201" },
+"70704": { nome: "PEDRO TIÊGO DA CONCEIÇÃO ARAÚJO ", turma: "201" },
+"78178": { nome: "RAYSLANE SILVA VIEIRA ", turma: "201" },
+"74210": { nome: "RHUAN FELLYPE BEZERRA DA SILVA ", turma: "201" },
+"70706": { nome: "ROBSON RAILAN CARVALHO SANTOS ", turma: "201" },
+"74952": { nome: "SARA DA  SILVA  COELHO ", turma: "201" },
+"74482": { nome: "TATIELLY DE MOURA LEAL ", turma: "201" },
+"74833": { nome: "WESLLEY GOUVEIA DA SILVA ", turma: "201" },
+"73267": { nome: "ABNADABI DA COSTA RESENDE - TURMA 202", turma: "202" },
+"72915": { nome: "ADRIELLE LOUHANNY PEREIRA ARAUJO - TURMA 202", turma: "202" },
+"74624": { nome: "ANA LUIZA AMORIM COSTA - TURMA 202", turma: "202" },
+"75271": { nome: "ANA PAULA DOS SANTOS ALMEIDA - TURMA 202", turma: "202" },
+"72221": { nome: "ANNA LUIZA SOUSA SILVA - TURMA 202", turma: "202" },
+"72322": { nome: "ARYANE MARTINS OLIVEIRA - TURMA 202", turma: "202" },
+"76978": { nome: "CAMILLY EDUARDA SILVA VIEIRA DA SILVA - TURMA 202", turma: "202" },
+"74849": { nome: "CLAUDIA KAROLINE DE MENDONÇA LIMA - TURMA 202", turma: "202" },
+"70719": { nome: "DANYELE PEREIRA DO VALE - TURMA 202", turma: "202" },
+"70721": { nome: "DEYVISON GUILHERME DOS SANTOS SILVA - TURMA 202", turma: "202" },
+"76994": { nome: "EZEQUIAS DE ARAUJO DOS SANTOS - TURMA 202", turma: "202" },
+"58636": { nome: "FELIPE DOS SANTOS LIMA - TURMA 202", turma: "202" },
+"77326": { nome: "FERNANDA SILVA DE ANDRADE - TURMA 202", turma: "202" },
+"74062": { nome: "FRANCIELTON FIARES ANDRADE - TURMA 202", turma: "202" },
+"75083": { nome: "FRANCINY DA SILVA SOUSA - TURMA 202", turma: "202" },
+"73297": { nome: "FRANCISCA EMILLY DE SOUZA DE MORAES - TURMA 202", turma: "202" },
+"74446": { nome: "FRANCISCO DOS REIS GALDÊNCIO DA SILVA - TURMA 202", turma: "202" },
+"75915": { nome: "GABRYEL FERREIRA DA SILVA - TURMA 202", turma: "202" },
+"74064": { nome: "HYTAUANNE MAYSA GUIMARÃES COSTA - TURMA 202", turma: "202" },
+"75224": { nome: "JHENYFER YASMIN DE SOUSA DA SILVA - TURMA 202", turma: "202" },
+"70725": { nome: "JOÃO GUILHERME SILVA DA CONCEIÇÃO - TURMA 202", turma: "202" },
+"71803": { nome: "JOÃO OLIVEIRA MELQUIDES - TURMA 202", turma: "202" },
+"70716": { nome: "JULIANNE DA SILVA PEIXOTO - TURMA 202", turma: "202" },
+"70717": { nome: "KATARINY LIMA DOS REIS - TURMA 202", turma: "202" },
+"72079": { nome: "KAUANY SOARES SILVA - TURMA 202", turma: "202" },
+"70718": { nome: "KELLY YASMIN SILVA CHAVES - TURMA 202", turma: "202" },
+"72348": { nome: "LEONILDE DE SOUZA DOS SANTOS - TURMA 202", turma: "202" },
+"77518": { nome: "LETÍCIA RODRIGUES OLIVEIRA - TURMA 202", turma: "202" },
+"77412": { nome: "MADSON CONCEIÇÃO PEREIRA - TURMA 202", turma: "202" },
+"77157": { nome: "MARCOS FELIPE NONATO MARQUES - TURMA 202", turma: "202" },
+"70703": { nome: "MARIA EDUARDA DA SILVA CHAVES - TURMA 202", turma: "202" },
+"78076": { nome: "MARIA EDUARDA VIEIRA ARAUJO - TURMA 202", turma: "202" },
+"75094": { nome: "MARIA LÍVIA DA SILVA MARQUES - TURMA 202", turma: "202" },
+"74825": { nome: "MAYNARA KELLY AGUIAR DE OLIVEIRA - TURMA 202", turma: "202" },
+"72088": { nome: "MELYSSA THÁVYNNE DA SILVA MESQUITA - TURMA 202", turma: "202" },
+"70720": { nome: "NOHANDSON BARBOSA DA SILVA - TURMA 202", turma: "202" },
+"70723": { nome: "RAYCA VICTORIA DE SOUSA CARDOSO - TURMA 202", turma: "202" },
+"77158": { nome: "SARA RAYANANDA OLIVEIRA FERREIRA - TURMA 202", turma: "202" },
+"70722": { nome: "TAMIRES DE ALENCAR ARAÚJO - TURMA 202", turma: "202" },
+"75485": { nome: "AIME CHISTINE CARVALHO DOS REIS PEREIRA ", turma: "203" },
+"75774": { nome: "ALICE COSTA DA SILVA ", turma: "203" },
+"70711": { nome: "ANA LUISA DE ANDRADE PESSOA ", turma: "203" },
+"70715": { nome: "ANDRÉ FRANCISCO SANTOS LIMA ", turma: "203" },
+"73738": { nome: "ARTHUR GUIMARÃES DUARTE ", turma: "203" },
+"72774": { nome: "AYSLA CARVALHO DOS REIS PEREIRA ", turma: "203" },
+"72510": { nome: "BRAYAN CRISTIANO ESTOLANO DA SILVA ", turma: "203" },
+"73885": { nome: "DANIELLE MENDES DOS SANTOS ", turma: "203" },
+"70714": { nome: "DAVYLLA VICTORYA VIEIRA DOS SANTOS ", turma: "203" },
+"73955": { nome: "EDILSON MACHADO DA SILVA FILHO ", turma: "203" },
+"75679": { nome: "EMILY DA SILVA SOARES ", turma: "203" },
+"78216": { nome: "ESTER PRISLANY DE SOUSA MARTINS ", turma: "203" },
+"74105": { nome: "ESTEVÃO LIMA NASCIMENTO ", turma: "203" },
+"72458": { nome: "EVELLY DE SOUSA CARVALHO ", turma: "203" },
+"73780": { nome: "ISABELLY VITÓRIA MOTA BANDEIRA ", turma: "203" },
+"75444": { nome: "JOABSON JASIEL DE SOUSA SILVA ", turma: "203" },
+"72694": { nome: "JOÃO PEDRO DE AGUIAR DA SILVA ", turma: "203" },
+"72282": { nome: "JOÃO PEDRO ENES OLIVEIRA DE MELO ", turma: "203" },
+"73433": { nome: "JOÃO VICTOR CORREIA DE OLIVEIRA ", turma: "203" },
+"78002": { nome: "JOSÉ LUAN CARVALHO ARAÚJO ", turma: "203" },
+"73422": { nome: "KATHARINA FARIAS DELMONDES ", turma: "203" },
+"72960": { nome: "KAUAN ALCANTARA GOUVEIA E SILVA ", turma: "203" },
+"72856": { nome: "KELWENY KAUAN DE OLIVERIA ALVES ", turma: "203" },
+"74762": { nome: "LÍVIA MARIA DE MENESES DE SOUSA ", turma: "203" },
+"73303": { nome: "LÍVIA THAÍS MESQUITA FEITOSA ", turma: "203" },
+"74712": { nome: "MARCOS GABRIEL FARIAS ALVES ", turma: "203" },
+"75241": { nome: "MARIA VICTÓRIA CARNEIRO DA SILVA ", turma: "203" },
+"72896": { nome: "NILMAR KAUAN REIS MEDEIROS ", turma: "203" },
+"73145": { nome: "RAQUEL DOS SANTOS SILVA ", turma: "203" },
+"77156": { nome: "RHADJANE DE FATIMA VELOSO FERREIRA ", turma: "203" },
+"72391": { nome: "SHARA RAYANE ARAÚJO DA SILVA ", turma: "203" },
+"70713": { nome: "STHERFANY SOPHIA GONÇALVES LIMA ", turma: "203" },
+"76968": { nome: "TAYSLANE RODRIGUES LIMA ", turma: "203" },
+"70710": { nome: "THAYNA KEMILLY DA CRUZ SAMPAIO ", turma: "203" },
+"77154": { nome: "VITÓRIA MOURÃO FEITOSA ", turma: "203" },
+"73927": { nome: "ANNA JÚLIA SOARES PINHEIRO ", turma: "204" },
+"72008": { nome: "ANTÔNIO GABRIEL NOGUEIRA BRANDÃO ", turma: "204" },
+"74483": { nome: "CAINÃ LIMA  DE SA DA  SILVA ", turma: "204" },
+"74510": { nome: "CAINAN VITOR OLIVEIRA DE SOUZA ", turma: "204" },
+"75011": { nome: "CAIO MÁRIO DA SILVA SANTOS ", turma: "204" },
+"74590": { nome: "CHRISTIAN MATSON ALMEIDA REIS ", turma: "204" },
+"78075": { nome: "DAVIDY KAICK COSTA DA SILVA ", turma: "204" },
+"75159": { nome: "DEIZE GARRIDO DE SOUSA ", turma: "204" },
+"70736": { nome: "EMANUELLY OLIVEIRA DA SILVA ", turma: "204" },
+"73408": { nome: "ERIC GABRIEL AMORIM FREIRE ", turma: "204" },
+"70726": { nome: "ESDRAS DEMÉTRIO ALVES SANTOS ", turma: "204" },
+"70734": { nome: "FRANK VINICIUS SILVA DA COSTA ", turma: "204" },
+"74170": { nome: "HUDSON GABRIEL NASCIMENTO MARQUES ", turma: "204" },
+"75246": { nome: "IBSON GABRIEL FARIAS GOMES ", turma: "204" },
+"73300": { nome: "ISACC KELVIN BRAGA MORAIS ", turma: "204" },
+"71684": { nome: "IURY GABRIEL MIRANDA DA SILVA ", turma: "204" },
+"75331": { nome: "JACKSON REIS DA SILVA ", turma: "204" },
+"75875": { nome: "JOÃO ESTEVAM DE OLIVEIRA PONTES ", turma: "204" },
+"75760": { nome: "JOÃO GUILHERME LIMA SOARES ", turma: "204" },
+"70727": { nome: "KAMILLY SILVA ANDRADE ", turma: "204" },
+"73238": { nome: "KAUÊ PAIVA BARBOSA ", turma: "204" },
+"74746": { nome: "LÁZARO RAYCONE MACHADO LIMA ", turma: "204" },
+"59999": { nome: "LUCAS DANIEL SOUSA LIMA ", turma: "204" },
+"70732": { nome: "LUÍS ARTHUR ALVES SANTOS ", turma: "204" },
+"73290": { nome: "LUIZ FERNANDO GONÇALVES DOS REIS ", turma: "204" },
+"74354": { nome: "MARIA EDUARDA GARCES AGUIAR ", turma: "204" },
+"70731": { nome: "MARKEISON ALEXANDRE FERREIRA DA SILVA ", turma: "204" },
+"75505": { nome: "MAYARA KELLY DA SILVA LOPES ", turma: "204" },
+"75722": { nome: "MELQUISEDEQUE PEREIRA FERNANDES ", turma: "204" },
+"70730": { nome: "MÍRIAN EVELYN SOUZA DA SILVA ", turma: "204" },
+"72952": { nome: "PAULO HENRIQUE ARAUJO OLIVEIRA ", turma: "204" },
+"73301": { nome: "PEDRO HENRIQUE PALHANO DA SILVA ", turma: "204" },
+"70733": { nome: "RANIEL RAMOS RIBEIRO ", turma: "204" },
+"70737": { nome: "SILVIO ALEXANDRE DUARTE RODRIGUES ", turma: "204" },
+"77636": { nome: "SUZANY SILVA DA ROCHA ", turma: "204" },
+"74236": { nome: "WELLINGTON FRANCISCO CONCEIÇÃO DE SENA ", turma: "204" },
+"70712": { nome: "WILLAMY THIAGO MONTELO DA SILVA ", turma: "204" },
+"70735": { nome: "YOHANA AMORIM COSTA ", turma: "204" },
+"68459": { nome: "ADEILMA CRISTINA BARBOSA MENEZES ", turma: "301" },
+"58271": { nome: "ALEILSON MAGALHÃES RAPOSO ", turma: "301" },
+"59521": { nome: "ANA LUIZA SANTOS SOARES ", turma: "301" },
+"60443": { nome: "ÁVILLA EMANUELLY REIS OLIVEIRA ", turma: "301" },
+"59367": { nome: "BIANCA LOPES DE SOUSA ", turma: "301" },
+"68561": { nome: "BRUNA EVELLY COSTA DE ANDRADE ", turma: "301" },
+"61261": { nome: "CAMILE CRISTINE DA SILVA CORRÊA ", turma: "301" },
+"60718": { nome: "EMILLY GABRIELLY DE JESUS SILVA ", turma: "301" },
+"68383": { nome: "ENDERSON DIAS OLIVEIRA ", turma: "301" },
+"58238": { nome: "FRANCISCA LARA DA SILVA DOS SANTOS ", turma: "301" },
+"61027": { nome: "FRANCISCO FLAVIO NASCIMENTO VIEIRA ", turma: "301" },
+"60506": { nome: "GARDINA GEOVANNA JACAUNA COSTA DOS SANTOS ", turma: "301" },
+"59553": { nome: "HAGABSON WENDEL ARTEIRO DE CARVALHO DA SILVA ", turma: "301" },
+"60650": { nome: "HIAGO DE AGUIAR LIMA ", turma: "301" },
+"59577": { nome: "HILTON CHARLES SILVA SANTANA ", turma: "301" },
+"59519": { nome: "IRLAIANNY VITORIA SOUZA BASTOS ", turma: "301" },
+"61579": { nome: "JOÃO GUILHERME DE SOUSA FERREIRA ", turma: "301" },
+"59568": { nome: "JOÃO VICTOR AMORIM SOUZA ", turma: "301" },
+"61433": { nome: "JOSÉ DANIEL NUNES SALES ", turma: "301" },
+"68458": { nome: "JULIANA DE OLIVEIRA AMORIM SILVA ", turma: "301" },
+"59596": { nome: "KAUANE VITÓRIA DA SILVA LIMA ", turma: "301" },
+"60986": { nome: "KAUÊ MACHADO DOS SANTOS MESQUITA ", turma: "301" },
+"61143": { nome: "KAYCK RENAN SILVA DE CARVALHO ", turma: "301" },
+"68457": { nome: "KAYRON FRANCO DA SILVA ", turma: "301" },
+"58414": { nome: "KEVYN DAVID BARROS MENDES ", turma: "301" },
+"61545": { nome: "LAURA DE MENESES FREITAS ", turma: "301" },
+"60395": { nome: "MARCOS AURÉLIO DA SILVA SOUSA ", turma: "301" },
+"59222": { nome: "MARCOS RIAN MARTINS DA SILVA ", turma: "301" },
+"59049": { nome: "MARIA JOSE SOUSA ALVES ", turma: "301" },
+"59830": { nome: "MATHEUS BRANDÃO DA COSTA ", turma: "301" },
+"58448": { nome: "MAURO GABRIEL MARTINS DA SILVA ", turma: "301" },
+"59617": { nome: "MONALIZA MORAES SCHALCHER ", turma: "301" },
+"60361": { nome: "PEDRO RANIELLY SAMPAIO SANTOS ", turma: "301" },
+"60958": { nome: "RAIMUNDO NONATO DE OLIVEIRA SILVA ", turma: "301" },
+"68723": { nome: "RIAN MATHEUS GOMES SALES ", turma: "301" },
+"61269": { nome: "RURION OLIVEIRA RODRIGUES ", turma: "301" },
+"60240": { nome: "SÂMELLA LORRANY LOPES FARIAS ", turma: "301" },
+"61395": { nome: "SEBASTIANA FRAZÃO ROQUE ", turma: "301" },
+"68440": { nome: "TALIA DE CASTRO SABINO ", turma: "301" },
+"59511": { nome: "THAUANNE ALMEIDA DE BRITO ", turma: "301" },
+"58682": { nome: "THAYNA LIMA DE SOUZA ", turma: "301" },
+"60302": { nome: "WESSILA EDRIELLY FERNANDES CASTRO ", turma: "301" },
+"40256": { nome: "ALLAN SANTOS DA LUZ - TURMA 302", turma: "302" },
+"61444": { nome: "ANA CLARA BARROS VIANA - TURMA 302", turma: "302" },
+"68456": { nome: "ANA MARIA ALVES BARBOSA DE AGUIAR - TURMA 302", turma: "302" },
+"40259": { nome: "ÁQUILA RAYSSA CUNHA DA  SILVA - TURMA 302", turma: "302" },
+"59714": { nome: "ARTHUR KEVIN DE SOUSA DIOGO - TURMA 302", turma: "302" },
+"60017": { nome: "CASSIO VINICIUS SALES DA SILVA LUZ - TURMA 302", turma: "302" },
+"60254": { nome: "CHRISTOPHER KAUAN COSTA PEREIRA - TURMA 302", turma: "302" },
+"68558": { nome: "DAVI GRABRIEL MAGALHAES SILVA - TURMA 302", turma: "302" },
+"51170": { nome: "DAVI WILLIAN ANDRADE SOUZA - TURMA 302", turma: "302" },
+"40263": { nome: "DIVINA MARIA DIAS MASCARENHAS - TURMA 302", turma: "302" },
+"58231": { nome: "HITTAUANE MARIA MORAES FERNANDES - TURMA 302", turma: "302" },
+"60826": { nome: "IASMIN GABRIELLY FERNANDES PAIVA - TURMA 302", turma: "302" },
+"40268": { nome: "INÁCIO HENRIQUE SILVA SANTANA - TURMA 302", turma: "302" },
+"59337": { nome: "INGRETH DJANE DOS SANTOS CUTRIM - TURMA 302", turma: "302" },
+"61308": { nome: "IRLANA NAIARA FRAZÃO CUTRIM - TURMA 302", turma: "302" },
+"68455": { nome: "IZAAC KAUAN FERREIRA ARRUDA - TURMA 302", turma: "302" },
+"59821": { nome: "JHENNIFER LORRANA DA SILVA MEDEIROS - TURMA 302", turma: "302" },
+"59602": { nome: "JOAO VITOR SALGADO GUIMARAES - TURMA 302", turma: "302" },
+"60435": { nome: "KAYNARA DA SILVA PONTES - TURMA 302", turma: "302" },
+"59512": { nome: "KEMYLLY CRISTINA DA COSTA DO NASCIMENTO - TURMA 302", turma: "302" },
+"58193": { nome: "KETHELEN LORAYNE DA SILVA LIMA - TURMA 302", turma: "302" },
+"40273": { nome: "LARISSA ALVES CANTANHEDE - TURMA 302", turma: "302" },
+"59509": { nome: "LETICIA DA SILVA E SILVA - TURMA 302", turma: "302" },
+"60358": { nome: "LUCAS SOUSA LIMA - TURMA 302", turma: "302" },
+"59449": { nome: "LUCIELE FLOR DE SOUSA - TURMA 302", turma: "302" },
+"62448": { nome: "MARCOS VINICIUS MONTEIRO DE MATOS ARAUJO - TURMA 302", turma: "302" },
+"58185": { nome: "MARIA CLARA FERREIRA COUTINHO - TURMA 302", turma: "302" },
+"59633": { nome: "MARIA RITHA ALMEIDA DA SILVA COSTA - TURMA 302", turma: "302" },
+"59775": { nome: "MARYANNA ANDRIELLEN DE CARVALHO ARAUJO - TURMA 302", turma: "302" },
+"60493": { nome: "NICOLLAS DA SILVA PESTANA - TURMA 302", turma: "302" },
+"61032": { nome: "PAULIANA FORTALEZA DA SILVA - TURMA 302", turma: "302" },
+"59717": { nome: "PAULO VICTOR RODRIGUES CUNHA - TURMA 302", turma: "302" },
+"68453": { nome: "RAILANE TAVILA MORAES VIEIRA - TURMA 302", turma: "302" },
+"59090": { nome: "RICARDO DA CUNHA LEITE - TURMA 302", turma: "302" },
+"59067": { nome: "ROBSON RAY SILVA SANTOS - TURMA 302", turma: "302" },
+"59594": { nome: "RYAN EMANUEL RIBEIRO BASTOS - TURMA 302", turma: "302" },
+"68454": { nome: "SIMÃO CIRINEU DE LEOPOLDINO DA SILVA FILHO - TURMA 302", turma: "302" },
+"59091": { nome: "TIAGO AMORIM SILVA - TURMA 302", turma: "302" },
+"59868": { nome: "VITOR DANIEL VIANA DA SILVA - TURMA 302", turma: "302" },
+"58284": { nome: "ALINE GABRIELLY SOUSA DE OLIVEIRA ", turma: "303" },
+"60427": { nome: "ANA JÚLIA SOUSA MARTINS RODRIGUES ", turma: "303" },
+"60604": { nome: "ANA LUIZA LIMA DOS SANTOS ", turma: "303" },
+"59837": { nome: "ANDRESSA EVILLYN LIMA DE CARVALHO ", turma: "303" },
+"58201": { nome: "CRISTHYAN GABRIEL DA COSTA REIS ", turma: "303" },
+"59132": { nome: "EDUARDA BORGES DA SILVA ", turma: "303" },
+"58451": { nome: "ELINALVA DE JESUS BEZERRA ", turma: "303" },
+"60398": { nome: "EMANUELLY SILVA SOUSA ", turma: "303" },
+"58852": { nome: "ERMESSON DIEGO SOARES ARAÚJO ", turma: "303" },
+"59590": { nome: "EVILLY LOURRANY  OLIVEIRA DE CARVALHO ", turma: "303" },
+"68450": { nome: "EWERTON JHONSON FERREIRA OLIVEIRA ", turma: "303" },
+"60505": { nome: "FELIPE MONTELO COCADA ", turma: "303" },
+"59872": { nome: "FRANKLIN LUAN DELFINO FERREIRA ", turma: "303" },
+"60658": { nome: "GABRIEL DA SILVA BEZERRA ", turma: "303" },
+"58265": { nome: "GABRIELLY LOHANNY BRITO SILVA ", turma: "303" },
+"68449": { nome: "KAMILLY CARNEIRO MARQUES ", turma: "303" },
+"58551": { nome: "KASSIA THAYS CARNEIRO DA SILVA ", turma: "303" },
+"68446": { nome: "KAYC EDUARDO SAMPAIO SILVA ", turma: "303" },
+"59088": { nome: "KAYLANE SILVA MORAES ", turma: "303" },
+"68445": { nome: "LAISSA KESIA VARGEM DE MESQUITA ", turma: "303" },
+"62398": { nome: "LARA BEATRIZ DE ARAÚJO CLARO ", turma: "303" },
+"61061": { nome: "LAYANNE MESQUITA COSTA E COSTA ", turma: "303" },
+"58440": { nome: "LUCIANNY TAVARES BORGES ", turma: "303" },
+"58776": { nome: "LUIS FELIPE DE ANDRADE PESSOA ", turma: "303" },
+"59325": { nome: "LUIZA ADRIELLY DA SILVA LIMA ", turma: "303" },
+"61454": { nome: "LUZIA FRANCIELI SOUSA DOS SANTOS ", turma: "303" },
+"61378": { nome: "MARCIA EDUARDA COSTA DE SOUSA ", turma: "303" },
+"68443": { nome: "MARIA CLARA DO NASCIMENTO PEREIRA ", turma: "303" },
+"58146": { nome: "MARIA DOLORES DOS SANTOS FERREIRA ", turma: "303" },
+"58536": { nome: "MARKYANE DOS SANTOS DA SILVA ", turma: "303" },
+"58480": { nome: "MAYARA LOURRANY DE MELO FERNANDES ", turma: "303" },
+"59611": { nome: "NATHALIA BRAGA DA SILVA ", turma: "303" },
+"60471": { nome: "NAUANNE VITORIA TEIXEIRA SOUSA ", turma: "303" },
+"60731": { nome: "NAYRA LETÍCIA ARAÚJO DE SÁ ", turma: "303" },
+"68441": { nome: "RAYNANDA PEREIRA CAMPOS ", turma: "303" },
+"60666": { nome: "RICHARD SOUSA SILVA ", turma: "303" },
+"59567": { nome: "RODRIGO DE SOUSA MARTINS ", turma: "303" },
+"58532": { nome: "SARA ISRAELA SILVA DOS REIS ", turma: "303" },
+"59423": { nome: "VITOR GABRIEL ALMEIDA SILVA ", turma: "303" },
+"58802": { nome: "YOHANNA AGHATA ARAUJO SILVA ", turma: "303" },
+"59155": { nome: "ANTHONY KAUAN GARCÊS AGUIAR ", turma: "304" },
+"58758": { nome: "APOLO KAYC OLIVEIRA SANTANA ", turma: "304" },
+"68451": { nome: "ARSHILLEY MANUELA FARIAS GOMES ", turma: "304" },
+"61432": { nome: "BRUNO LUAN CRUZ LEAL ", turma: "304" },
+"58165": { nome: "CARLOS EDUARDO CONCEIÇÃO DE JESUS ", turma: "304" },
+"61239": { nome: "CAUÊ VINÍCIUS DAMASCENO DA SILVA ", turma: "304" },
+"59319": { nome: "DIEGO LUCAS LOPES DE SOUSA ", turma: "304" },
+"60499": { nome: "ELEKELSOM MORAES MOURA ", turma: "304" },
+"59575": { nome: "EMILLY VITORIA FERREIRA DOS SANTOS ", turma: "304" },
+"60526": { nome: "ESTHEFANNE KAUANE DOS SANTOS FURTADO ", turma: "304" },
+"58803": { nome: "GISELLY VITÓRIA DE SOUSA SANTOS ", turma: "304" },
+"60025": { nome: "HALYSON RUAN DOS SANTOS LIMA ", turma: "304" },
+"68447": { nome: "HYTALLO HENRIQUE GUIMARAES DA COSTA ", turma: "304" },
+"59809": { nome: "JAQUELINE DE AGUIAR CORREIA ", turma: "304" },
+"68444": { nome: "JEFFERSON GUSTAVO DE OLIVEIRA CARDOSO ", turma: "304" },
+"60034": { nome: "JEOVAN ÉDEN RODRIGUES DE LIMA DA CRUZ ", turma: "304" },
+"61151": { nome: "JOÃO MANUEL SALES SOUSA ", turma: "304" },
+"59835": { nome: "JOILSON DA COSTA LOPES ", turma: "304" },
+"59115": { nome: "JOSÉ GABRIEL LIMA FRANCO ", turma: "304" },
+"61594": { nome: "KALINE RIBEIRO DA SILVA ", turma: "304" },
+"59287": { nome: "KARINY LAUANY MARQUES CORREIA ", turma: "304" },
+"60841": { nome: "LEYLSON THOMAZ LIMA SOARES ", turma: "304" },
+"60093": { nome: "LIVIA MICAELE DOS SANTOS MAIA ", turma: "304" },
+"59722": { nome: "LUANA DA SILVA SANTANA ", turma: "304" },
+"59095": { nome: "LUDIMILA FERNANDA PEREIRA SANTOS ", turma: "304" },
+"61210": { nome: "MARIA CLARA GOMES MELO ", turma: "304" },
+"58631": { nome: "MICHELLY KELVENN BRAGA GOMES ", turma: "304" },
+"60256": { nome: "MICKAEL GOMES LIMA ", turma: "304" },
+"59513": { nome: "NOHADSON BARBOSA DA SILVA ", turma: "304" },
+"61595": { nome: "PAULO ABEL DE SOUSA LIMA ", turma: "304" },
+"58424": { nome: "PEDRO ÍTALO NUNES DA CRUZ ", turma: "304" },
+"61361": { nome: "PEDRO LUCAS CORDEIRO MOURÃO ", turma: "304" },
+"58465": { nome: "PEDRO RICKELMY DE JESUS DOS SANTOS ", turma: "304" },
+"60619": { nome: "RENATO GABRIEL URBANO MENDONÇA ", turma: "304" },
+"59502": { nome: "REVERSON ALMEIDA LIMA ", turma: "304" },
+"68442": { nome: "SAVIO RAFAEL SILVA DA ROCHA ", turma: "304" },
+"60436": { nome: "SÉRGIO COSME COSTA SANTOS FILHO ", turma: "304" },
+"61161": { nome: "WELKE CRISTHIAN CARNEIRO LIMA ", turma: "304" },
+"60714": { nome: "WILLIAM SANTOS NETO ", turma: "304" },
+"59108": { nome: "WILLIAN THIAGO CAMPOS DE PAIVA ", turma: "304" },
+"58101": { nome: "MARIA DE LOURDES SOUSA ", turma: "204" },
+        // Adicione mais códigos e informações aqui conforme necessário
+    };
+
+    let excelData = [];
+    let codigosDigitados = new Set();
+    let nomesEscaneados = new Set();
+
+    function buscarInformacoes() {
+        const codigo = document.getElementById("barcodeInput").value.trim();
+        const info = listaDeCodigos[codigo];
+        const list = document.getElementById("list");
+        const ultimoNomeDiv = document.getElementById("ultimoNome");
+
+        if (!codigo) return;
+
+        if (codigosDigitados.has(codigo)) {
+            const item = document.createElement('li');
+            item.className = "repeat";
+            item.innerHTML = `<span style="color: red;">CÓDIGO JÁ UTILIZADO ANTERIORMENTE - Código: ${codigo} - Nome: ${info ? info.nome : 'Desconhecido'}</span>`;
+            list.appendChild(item);
+        } else if (!info) {
+            const item = document.createElement('li');
+            item.className = "error";
+            item.textContent = `CÓDIGO NÃO ENCONTRADO - Código: ${codigo}`;
+            list.appendChild(item);
+        } else {
+            const now = new Date();
+            const data = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+            const hora = now.getHours().toString().padStart(2, '0');
+            const minuto = now.getMinutes().toString().padStart(2, '0');
+            const segundo = now.getSeconds().toString().padStart(2, '0');
+            const horario = `${hora}:${minuto}:${segundo}`;
+
+            const item = document.createElement('li');
+            item.innerHTML = `<strong>Nome:</strong> ${info.nome} - <strong>Turma/Cargo:</strong> ${info.turma} - <strong>Data:</strong> ${data} - <strong>Horário:</strong> ${horario}`;
+            list.appendChild(item);
+
+            excelData.push({ Nome: info.nome, Turma: info.turma, Data: data, Horário: horario });
+            nomesEscaneados.add(info.nome);
+
+            ultimoNomeDiv.innerHTML = `${info.nome}`;
+        }
+
+        codigosDigitados.add(codigo);
+        document.getElementById("barcodeInput").value = "";
+        document.getElementById("count").textContent = `>>>>> QUANTIDADE: ${nomesEscaneados.size}`;
+        document.getElementById("barcodeInput").focus();
+        
+        // Ajuste para a rolagem: Mover a visualização para o último elemento adicionado
+        list.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+
+    document.getElementById("barcodeInput").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            buscarInformacoes();
+        }
+    });
+
+    function exportToExcel() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+        const fileName = `${year}${month}${day}_${hour}${minute}${second}_registros.xlsx`; // Nome do arquivo com data e hora atual sem pontuação
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Dados');
+        XLSX.writeFile(workbook, fileName);
+    }
+
+    function salvarArquivo() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+        const fileName = `${year}${month}${day}_${hour}${minute}${second}_registros.txt`; // Nome do arquivo com data e hora atual sem pontuação
+
+        let fileContent = "Nome\tTurma\tData\tHorário\n";
+        excelData.forEach(data => {
+            fileContent += `${data.Nome}\t${data.Turma}\t${data.Data}\t${data.Horário}\n`;
+        });
+
+        const blob = new Blob([fileContent], { type: 'text/plain' });
+        const anchor = document.createElement('a');
+        anchor.download = fileName;
+        anchor.href = window.URL.createObjectURL(blob);
+        anchor.target = '_blank';
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+    }
+</script>
+</body>
+</html>
