@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IEMA</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --txt:#1f2937;
+      --muted:#6b7280;
+      --primary:#2563eb;
+      --primary-hover:#1d4ed8;
+      --ring:rgba(37,99,235,.25);
+      --border:#e5e7eb;
+      --soft:#f0f4ff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; padding:24px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--txt); background:var(--bg);
+      line-height:1.4;
+    }
+
+    .container{
+      max-width:1200px; margin:0 auto;
+      display:grid; grid-template-columns: 1fr 340px; gap:20px;
+    }
+
+    header{
+      max-width:1200px; margin:0 auto 16px auto;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    header h1{ margin:0; font-size:1.4rem; font-weight:700; letter-spacing:.2px; }
+
+    .toolbar{ display:flex; gap:10px; flex-wrap:wrap; width:100%; }
+    .control{
+      display:flex; align-items:center; gap:8px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:12px; padding:10px 12px; min-width:260px; flex:1;
+      box-shadow:0 1px 2px rgba(0,0,0,.04);
+    }
+    .control label{font-size:.8rem; color:var(--muted)}
+    .control select,.control input{ width:100%; border:0; outline:0; background:transparent; font-size:.95rem; color:var(--txt); }
+
+    .list-card{
+      background:var(--card); border:1px solid var(--border); border-radius:16px;
+      box-shadow:0 8px 20px rgba(0,0,0,.06);
+      padding:10px; display:flex; flex-direction:column; min-height:420px;
+    }
+    .list-head{
+      display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px;
+      color:var(--muted); font-size:.85rem;
+    }
+    #alunoList{
+      list-style:none; margin:0; padding:0;
+      overflow:auto; height:calc(100vh - 260px);
+      border-radius:12px;
+    }
+    #alunoList[aria-busy="true"]{opacity:.6}
+    #alunoList li{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 12px; margin:6px; border:1px solid var(--border);
+      border-radius:12px; cursor:pointer; transition:transform .05s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+      background:#fff;
+    }
+    #alunoList li:hover{border-color:#d7dbe3; background:#fafcff}
+    #alunoList li.selected{
+      border-color:var(--primary);
+      background:linear-gradient(0deg, #fff, var(--soft));
+      box-shadow:0 0 0 3px var(--ring);
+    }
+    .index-badge{
+      min-width:32px; height:32px; display:grid; place-items:center;
+      border-radius:10px; background:#eef2ff; color:#3730a3; font-weight:700; font-size:.9rem;
+    }
+    .li-body{display:flex; flex-direction:column}
+    .li-name{font-weight:600}
+    .li-meta{font-size:.8rem; color:#6b7280}
+
+    .side{
+      position:relative;
+      background:var(--card); border:1px solid var(--border); border-radius:16px;
+      box-shadow:0 8px 20px rgba(0,0,0,.06); padding:14px;
+      height:fit-content; position:sticky; top:20px;
+    }
+    .photo{
+      width:100%; border:1px solid var(--border); border-radius:14px; overflow:hidden; background:#f8fafc;
+      aspect-ratio:4/5; display:flex; align-items:center; justify-content:center; margin-bottom:12px;
+    }
+    .photo img{max-width:100%; max-height:100%; display:block}
+    .placeholder{font-size:.9rem; color:var(--muted)}
+    .info p{margin:.25rem 0}
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:.75rem; padding:4px 8px; border-radius:999px; background:#eff6ff; color:#1e40af; border:1px solid #dbeafe;
+    }
+    .qr{
+      border:1px dashed var(--border); border-radius:12px; padding:10px;
+      display:flex; flex-direction:column; align-items:center; gap:8px;
+    }
+    .qr canvas{width:160px; height:160px}
+    .actions{display:flex; gap:8px; width:100%; flex-wrap:wrap;}
+    .btn{
+      flex:1; border:0; border-radius:10px; padding:10px 12px; cursor:pointer;
+      background:var(--primary); color:#fff; font-weight:600; font-size:.95rem;
+      transition:background .15s ease, transform .02s ease;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:#1118271a; color:#111827}
+    .btn:hover{background:var(--primary-hover)}
+    .btn.print{background:#10b981;}
+    .btn.print:hover{background:#059669;}
+
+    .empty{
+      margin:20px; padding:14px; text-align:center; color:var(--muted); border:1px dashed var(--border);
+      border-radius:12px; background:#fff;
+    }
+
+    @media (max-width: 960px){
+      .container{grid-template-columns:1fr}
+      #alunoList{height:50vh}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CARÔMETRO</h1>
+    <div class="toolbar" role="group" aria-label="Filtros e pesquisa">
+      <div class="control">
+        <label for="turmaSelect">Turma</label>
+        <select id="turmaSelect" aria-label="Escolha a turma">
+          <option value="">Todas as turmas</option>
+        </select>
+      </div>
+      <div class="control">
+        <label for="pesquisaInput">Pesquisar</label>
+        <input id="pesquisaInput" type="text" placeholder="Nome, código, curso ou parte do nome" autocomplete="off" />
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <section class="list-card">
+      <div class="list-head">
+        <span>Alunos</span>
+        <span class="badge">↑↓ navegue com as setas</span>
+      </div>
+      <ul id="alunoList" role="listbox" aria-label="Lista de alunos" aria-busy="false"></ul>
+      <div id="emptyState" class="empty" style="display:none">Nenhum aluno encontrado.</div>
+    </section>
+
+    <aside class="side" id="sidePanel" aria-live="polite">
+      <div class="photo" id="photoBox">
+        <img id="alunoFoto" alt="Foto do Aluno" style="display:none" />
+        <div id="fotoPlaceholder" class="placeholder">Sem foto</div>
+      </div>
+
+      <div class="info" id="alunoInfo">
+        <p><strong>Nome:</strong> <span id="alunoNome">—</span></p>
+        <p><strong>Turma:</strong> <span id="alunoTurma">—</span></p>
+        <p><strong>Curso:</strong> <span id="alunoCurso">—</span></p>
+        <p><strong>Código:</strong> <span id="alunoCodigo">—</span></p>
+      </div>
+
+      <div class="qr" aria-label="QR Code">
+        <canvas id="qrCodeCanvas"></canvas>
+        <div class="actions">
+          <button id="saveQrCode" class="btn">Salvar QR</button>
+          <button id="copyQrCode" class="btn secondary">Copiar</button>
+          <button id="printCard" class="btn print">Imprimir</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <!-- seu arquivo de dados -->
+  <script src="alunos.js"></script>
+
+  <script>
+    // --------- refs DOM
+    const turmaSelect   = document.getElementById('turmaSelect');
+    const pesquisaInput = document.getElementById('pesquisaInput');
+    const alunoList     = document.getElementById('alunoList');
+    const emptyState    = document.getElementById('emptyState');
+
+    const alunoFoto     = document.getElementById('alunoFoto');
+    const fotoPH        = document.getElementById('fotoPlaceholder');
+    const alunoNome     = document.getElementById('alunoNome');
+    const alunoTurma    = document.getElementById('alunoTurma');
+    const alunoCurso    = document.getElementById('alunoCurso');
+    const alunoCodigo   = document.getElementById('alunoCodigo');
+    const qrCodeCanvas  = document.getElementById('qrCodeCanvas');
+    const saveQrCode    = document.getElementById('saveQrCode');
+    const copyQrCode    = document.getElementById('copyQrCode');
+
+    // --------- dados (vem do alunos.js)
+    // aceita tanto window.nomesAlunos quanto window.listaDeCodigos
+    let nomesAlunos = window.nomesAlunos || window.listaDeCodigos || {};
+
+    const cursosPorTurma = {
+      "101": "TÉCNICO EM AGROPECUÁRIA",
+      "102": "TÉCNICO EM SERVIÇOS JURÍDICOS",
+      "103": "TÉCNICO EM ADMINISTRAÇÃO",
+      "104": "TÉCNICO EM MANUTENÇÃO E SUPORTE EM INFORMÁTICA",
+      "201": "TÉCNICO EM AGROPECUÁRIA",
+      "202": "TÉCNICO EM SERVIÇOS JURÍDICOS",
+      "203": "TÉCNICO EM ADMINISTRAÇÃO",
+      "204": "TÉCNICO EM MANUTENÇÃO E SUPORTE EM INFORMÁTICA",
+      "301": "TÉCNICO EM AGROPECUÁRIA",
+      "302": "TÉCNICO EM SERVIÇOS JURÍDICOS",
+      "303": "TÉCNICO EM ADMINISTRAÇÃO",
+      "304": "TÉCNICO EM INFORMÁTICA"
+    };
+
+    // --------- utils
+    const norm  = (t) => (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const clamp = (n,min,max)=>Math.max(min,Math.min(n,max));
+    const getItems = () => Array.from(alunoList.querySelectorAll('li'));
+
+    let selectedIndex = -1;
+
+    function updateSideFromLi(li){
+      if(!li){ clearSide(); return; }
+      const { codigo, nome, turma } = li.dataset;
+
+      alunoNome.textContent  = nome;
+      alunoTurma.textContent = turma;
+      alunoCurso.textContent = cursosPorTurma[turma] || "—";
+      alunoCodigo.textContent= codigo;
+
+      // foto no painel (não imprime)
+      const src = `imagens/${nome}.png`;
+      alunoFoto.src = src;
+      alunoFoto.style.display = 'block';
+      fotoPH.style.display = 'none';
+      alunoFoto.onerror = () => { alunoFoto.style.display='none'; fotoPH.style.display='block'; };
+
+      // QR no painel
+      QRCode.toCanvas(qrCodeCanvas, codigo, { width:160, margin:2 });
+    }
+
+    function clearSide(){
+      alunoNome.textContent = "—";
+      alunoTurma.textContent= "—";
+      alunoCurso.textContent= "—";
+      alunoCodigo.textContent= "—";
+      alunoFoto.style.display = 'none';
+      fotoPH.style.display = 'block';
+      const ctx = qrCodeCanvas.getContext('2d');
+      if(ctx){ ctx.clearRect(0,0,qrCodeCanvas.width, qrCodeCanvas.height); }
+    }
+
+    function selectIndex(idx, {scroll=true} = {}){
+      const items = getItems();
+      if(!items.length){ selectedIndex = -1; clearSide(); return; }
+
+      const newIdx = clamp(idx, 0, items.length-1);
+      const prev = items[selectedIndex];
+      const curr = items[newIdx];
+
+      if(prev){
+        prev.classList.remove('selected');
+        prev.setAttribute('aria-selected','false');
+      }
+      curr.classList.add('selected');
+      curr.setAttribute('aria-selected','true');
+      selectedIndex = newIdx;
+
+      updateSideFromLi(curr);
+      if(scroll) curr.scrollIntoView({block:'nearest', inline:'nearest'});
+      alunoList.setAttribute('aria-activedescendant', curr.id);
+    }
+
+    function renderAlunoList(filterFn){
+      alunoList.setAttribute('aria-busy','true');
+      alunoList.innerHTML = '';
+
+      const entries = Object.entries(nomesAlunos)
+        .filter(([codigo, aluno]) => filterFn(codigo, aluno))
+        .sort(([,a],[,b]) => norm(a.nome).localeCompare(norm(b.nome)));
+
+      emptyState.style.display = entries.length ? 'none' : 'block';
+
+      entries.forEach(([codigo, aluno], i) => {
+        const li = document.createElement('li');
+        li.id = `aluno-${codigo}`;
+        li.role = "option";
+        li.setAttribute('aria-selected','false');
+
+        li.dataset.codigo = codigo;
+        li.dataset.nome   = aluno.nome;
+        li.dataset.turma  = aluno.turma;
+        li.dataset.index  = i;
+
+        li.innerHTML = `
+          <div class="index-badge">${String(i+1).padStart(2,'0')}</div>
+          <div class="li-body">
+            <div class="li-name">${aluno.nome}</div>
+            <div class="li-meta">Turma ${aluno.turma} • ${(cursosPorTurma[aluno.turma]||'')}</div>
+          </div>
+        `;
+
+        li.addEventListener('click', () => selectIndex(i));
+        alunoList.appendChild(li);
+      });
+
+      alunoList.setAttribute('aria-busy','false');
+      if(entries.length){ selectIndex(0, {scroll:false}); } else { clearSide(); }
+    }
+
+    function populateTurmaSelect(){
+      // usar as turmas do mapa cursosPorTurma (ou pegar do JSON se preferir)
+      Object.entries(cursosPorTurma).forEach(([turma,curso])=>{
+        const opt = document.createElement('option');
+        opt.value = turma; opt.textContent = `${turma} — ${curso}`;
+        turmaSelect.appendChild(opt);
+      });
+    }
+
+    function applyFilters(){
+      const turma = turmaSelect.value;
+      const q = norm(pesquisaInput.value);
+      renderAlunoList((codigo, aluno) => {
+        const matchTurma = !turma || aluno.turma === turma;
+        const base = `${aluno.nome} ${codigo} ${cursosPorTurma[aluno.turma]||''}`;
+        const matchTexto = !q || norm(base).includes(q);
+        return matchTurma && matchTexto;
+      });
+    }
+
+    turmaSelect.addEventListener('change', applyFilters);
+    pesquisaInput.addEventListener('input', applyFilters);
+
+    // --------- teclado global (↑ ↓ Home End PageUp PageDown)
+    document.addEventListener('keydown', (e) => {
+      const keys = ['ArrowDown','ArrowUp','Home','End','PageDown','PageUp'];
+      if(!keys.includes(e.key)) return;
+
+      const items = getItems();
+      if(!items.length) return;
+
+      // permitir navegar mesmo com foco nos inputs
+      e.preventDefault();
+
+      let next = selectedIndex;
+      const page = Math.max(1, Math.floor(items.length * 0.1)); // salto ~10%
+
+      switch(e.key){
+        case 'ArrowDown': next = selectedIndex + 1; break;
+        case 'ArrowUp':   next = selectedIndex - 1; break;
+        case 'Home':      next = 0; break;
+        case 'End':       next = items.length - 1; break;
+        case 'PageDown':  next = selectedIndex + page; break;
+        case 'PageUp':    next = selectedIndex - page; break;
+      }
+      selectIndex(next);
+    });
+
+    // --------- ações QR (salvar/copiar)
+    saveQrCode.addEventListener('click', () => {
+      const codigo = alunoCodigo.textContent.trim() || 'codigo';
+      const nome = (alunoNome.textContent.trim() || 'aluno').replace(/\s+/g,'_');
+      if(!qrCodeCanvas.toBlob){ alert('Seu navegador não suporta salvar o QR Code.'); return; }
+      qrCodeCanvas.toBlob((blob) => {
+        if(!blob) return;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${codigo}_${nome}.png`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }, 'image/png');
+    });
+
+    copyQrCode.addEventListener('click', async () => {
+      if(!qrCodeCanvas.toBlob || !('ClipboardItem' in window)){
+        alert('Copia de imagem não suportada neste navegador.');
+        return;
+      }
+      qrCodeCanvas.toBlob(async (blob)=>{
+        if(!blob){ alert('Erro ao copiar o QR Code!'); return; }
+        try{
+          await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+          alert('QR Code copiado para a área de transferência!');
+        }catch(err){
+          alert('Erro ao copiar: ' + err.message);
+        }
+      }, 'image/png');
+    });
+
+    // --------- Impressão térmica (80mm) SEM FOTO — só Nome, Turma, Código e QR
+    document.getElementById('printCard').addEventListener('click', () => {
+      const nome   = alunoNome.textContent.trim();
+      const turma  = alunoTurma.textContent.trim();
+      const codigo = alunoCodigo.textContent.trim();
+      const qrSrc  = qrCodeCanvas.toDataURL("image/png");
+
+      const printWin = window.open('', '', 'width=400,height=600');
+      printWin.document.write(`
+        <html>
+        <head>
+          <title>Impressão</title>
+          <style>
+            @page { size: 80mm auto; margin: 0; }
+            body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 6px; }
+            .nome { font-weight: bold; font-size: 14pt; margin-bottom: 4px; }
+            .turma, .codigo { font-size: 12pt; margin-bottom: 4px; }
+            .qr img { width: 140px; height: 140px; margin-top: 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="nome">${nome}</div>
+          <div class="turma">Turma: ${turma}</div>
+          <div class="codigo">Código: ${codigo}</div>
+          <div class="qr"><img src="${qrSrc}" alt="QR Code"></div>
+          <script>
+            window.onload = function(){
+              window.print();
+              window.close();
+            }
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWin.document.close();
+    });
+
+    // --------- init
+    function init(){
+      populateTurmaSelect();
+      renderAlunoList(()=>true);
+    }
+    // garante que alunos.js já carregou
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
